@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Query管理面板</title>
+    <!-- 引入 Bootstrap CSS -->
+        <link rel="stylesheet" href="../static/bootstrap.min.css">
+
+
+</head>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto; /* 允许在垂直方向上滚动 */
+        }
+        .container {
+            margin-bottom: 20px; /* 底部留白，防止内容挤到底部 */
+        }
+                .img-fixed-height {
+            height: 200px; /* 固定高度 */
+            width: auto;  /* 宽度自动调整 */
+            object-fit: contain; /* 保证内容不被裁剪，完全包含在分配的宽高中 */
+        }
+                      .header-label {
+            font-weight: bold; /* 粗体字显示列名 */
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="text-center my-4">Query管理面板</h1>
+
+    <div class="container">
+            <!-- 列名 -->
+        <div class="row align-items-center mb-3 ">
+               <div class="col-md-2">
+               <div></div>
+             </div>
+            <div class="col-md-3">
+                <p class="header-label">Query 图像</p>
+            </div>
+            <div class="col-md-2">
+                <p class="header-label">Query 标签</p>
+            </div>
+            <div class="col-md-2">
+                <p class="header-label">操作按钮</p>
+            </div>
+        </div>        {% for image in images %}
+        <div class="row align-items-center mb-3">
+           <div class="col-md-2">
+               <div></div>
+             </div>
+            <div class="col-md-3">
+                <img src="data:image/jpeg;base64,{{ image.image_base64 }}" alt="Image" class="img-fluid img-fixed-height">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control input-query " value="{{ image.imageName[:-4] }}">
+                <input type="hidden" class="form-control original-name" value="{{ image.imageName[:-4] }}">
+            </div>
+            <div class="col-md-1">
+                 <button class="btn btn-primary  change-btn">修改</button>
+                    </div>
+            <div class="col-md-1">
+                <button class="btn btn-primary  delete-btn">删除</button>
+            </div>
+                    <div class="col-md-1">
+                <button class="btn btn-primary  select-btn">选择</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const  deleteButtons = document.querySelectorAll('.delete-btn');
+             deleteButtons.forEach(button => {
+                button.onclick = function() {
+
+                    const input = this.closest('.row').querySelector('.input-query');
+                    const query = input.value;
+                    console.log(query)
+                    fetch('/deleteQuery', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({queryName: query})
+                    })
+                                .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                if (data.status === 'success') {
+                    // 如果响应成功，刷新页面
+                    window.location.reload();
+                } else {
+                    // 如果响应失败，显示错误信息
+                    alert('Failed: ' + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
+            }
+        });
+    const changeButtons = document.querySelectorAll('.change-btn');
+    changeButtons.forEach(button => {
+        button.onclick = function() {
+            const input = this.closest('.row').querySelector('.input-query');
+            const newName = input.value;
+            const input1 = this.closest('.row').querySelector('.original-name');
+            const originalName = input1 .value;
+            console.log(newName);
+            fetch('/updateQuery', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({newName: newName, originalName: originalName})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                if (data.status === 'success') {
+                       window.location.reload();
+                } else {
+                    alert('Failed: ' + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
+        }
+    });
+ const selectButtons = document.querySelectorAll('.select-btn');
+ selectButtons.forEach(button => {
+        button.onclick = function() {
+            const input = this.closest('.row').querySelector('.input-query');
+            var selectName = input.value;
+            selectName=selectName+".jpg"
+            console.log(selectName)
+            if (parent && parent.document) {
+                  console.log("findp")
+        var selectBox = parent.document.getElementById('queryList');
+        if (selectBox) {
+                console.log("finds")
+            selectBox.value = selectName;
+        }
+    }
+
+              }
+    });
+        })
+
+    </script>
+    <!-- 引入 Bootstrap JS (需要先加载 jQuery) -->
+<script src="../static/jquery-3.6.0.min.js"></script>
+<script src="../static/bootstrap.min.css"></script>
+</body>
+</html>

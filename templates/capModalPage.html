@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>截取query</title>
+    <style>
+        #canvasElement {
+            position: absolute;
+            pointer-events: none;
+            display: none;
+        }
+
+        .capcontainer {
+            position: relative;
+        }
+
+        #videoPlayer {
+            position: absolute;
+
+        }
+        .modal {
+            {#display: none;#}
+            {#position: fixed;#}
+            {#padding: 20px;#}
+            {##}
+            {#z-index: 100;#}
+            {#width: 50%;#}
+            {#height: 90%;#}
+            {#left: 90%;#}
+            {#top: 50%;#}
+            {#transform: translate(-50%, -50%); /* 居中模态框 */#}
+            {##}
+            {##}
+            {#background-color: rgba(255, 255, 255, 1); /* 设置为不透明的白色 */#}
+                display: none; /* 默认隐藏模态框 */
+    position: fixed; /* 固定定位 */
+    z-index: 1; /* 置于顶层 */
+    left: 0;
+    top: 0;
+      width: 100%; /* 宽度为80% */
+    height: 100%; /* 高度为80% */
+    overflow: auto; /* 启用滚动条 */
+
+    background-color: rgb(0,0,0); /* 背景颜色 */
+    background-color: rgba(0,0,0,0.4); /* 背景颜色，半透明 */
+        }
+        .modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 5% 从顶部和自动水平边距 */
+    padding: 20px;
+    {#border: 1px solid #888;#}
+    {#width: 40%; /* 宽度为80% */#}
+    {#height: 80%; /* 高度为80% */#}
+    {#box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);#}
+}
+
+        .modal-image {
+            width: 90%; /* 图片宽度为模态框的80% */
+            height: 90% ;/* 高度自适应 */
+
+
+        }
+    </style>
+</head>
+<body>
+<div class="capcontainer">
+    <video id="videoPlayer" controls width="250">
+        Your browser does not support the video tag.
+    </video>
+
+    <canvas id="canvasElement"></canvas>
+</div>
+<!-- 模态框结构 -->
+<div id="imageModal" class="modal">
+  <div id="modal-content" class="modal-content">
+    <img id="modalImage" class="modal-image" src="">
+
+        <input type="text" id="queryLabel" placeholder="query标签" >
+          <div class="modal-buttons">
+      <button id="yesBtn">上传图片</button>
+      <button id="noBtn">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.onload = function() {
+    console.log("传递的值是:", {{ selected_video | tojson }});
+    playSelectedVideo({{ selected_video | tojson }});
+  }; // 注意这里的分号和括号
+
+  function playSelectedVideo(selectVideo) {
+    const videoPlayer = document.getElementById('videoPlayer');
+    videoPlayer.style.display = 'block'; // 显示视频
+
+    console.log('Video can play through, play started.');
+
+    fetch(`/get-video?videoName=${encodeURIComponent(selectVideo)}&videoType=upload`, {
+      mode: 'cors'  // 确保请求支持跨域
+    })
+    .then(response => {
+      if (!response.ok) {  // 检查响应状态
+        return response.text() // 尝试获取响应正文作为文本
+          .then(text => {
+            console.log('Network response was not ok. Details: ' + text);
+            throw new Error('Network response was not ok. Details: ' + text); // 使用响应正文作为错误详情
+          });
+      }
+      return response.blob();  // 如果响应状态正常，处理blob数据
+    })
+    .then(blob => {
+      var videoURL = URL.createObjectURL(blob);
+      console.log('videourl:' + videoURL);
+
+      videoPlayer.src = videoURL;
+      console.log('Video loaded and play started.');  // 打印日志
+      videoPlayer.play();
+
+      videoPlayer.onended = function () {
+        videoPlayer.style.display = 'none'; // 视频播放完毕后隐藏视频
+      };
+    }).catch(error => {
+      console.error('Error:', error);
+      alert('Failed to fetch video: ' + error.message); // 弹出错误提示
+    });
+  }
+
+
+
+
+
+ document.addEventListener('DOMContentLoaded', function() {
+  // 获取ID为'videoPlayer'的video元素
+  var video = document.getElementById('videoPlayer');
+
+  // 确保视频元数据已加载
+  video.addEventListener('loadedmetadata', function() {
+    // 计算宽高比
+    var aspectRatio = video.videoHeight / video.videoWidth;
+
+    // 功能：根据窗口大小更新视频尺寸
+    function updateVideoSize() {
+      // 获取页面宽度的90%
+      var newWidth = window.innerWidth * 0.8;
+
+      // 根据宽高比计算新高度
+      var newHeight = newWidth * aspectRatio;
+
+      // 设置video元素的大小属性
+      video.width = newWidth;
+      video.height = newHeight;
+      console.log("video原本大小为:" +video.width +"/" +video.height)
+    }
+
+    // 初次调整尺寸
+    updateVideoSize();
+
+    // 监听窗口尺寸变化，以调整视频大小
+    window.addEventListener('resize', updateVideoSize);
+  });
+});
+
+
+    </script>
+<script>
+    let startX, startY, isDragging = false;
+
+const video = document.getElementById('videoPlayer');
+const canvas = document.getElementById('canvasElement');
+const context = canvas.getContext('2d');
+const screenshotContainer = document.getElementById('screenshotContainer');
+  canvas.width = video.clientWidth ;
+  canvas.height = video.clientHeight;
+video.addEventListener('mousedown', (e) => {
+  startX = e.offsetX;
+  startY = e.offsetY;
+  isDragging = true;
+  canvas.style.display = 'block';
+  canvas.width = video.clientWidth ;
+  canvas.height = video.clientHeight;
+  console.log("videoclient大小为:" +video.clientWidth +"/" +video.clientHeight)
+     console.log("videostyle大小为:" +video.style.width +"/" +video.style.height)
+      console.log("video大小为:" +video.videoWidth +"/" +video.height)
+        console.log("videooffset大小为:" +video.offsetWidth +"/" +video.offsetWidth)
+       console.log("canvas大小为:" +canvas.width +"/" +canvas.height)
+
+  canvas.style.left = video.offsetLeft + 'px';
+  canvas.style.top = video.offsetTop + 'px';
+
+   video.pause();
+});
+
+video.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    drawRect(startX, startY, e.offsetX - startX, e.offsetY - startY);
+  }
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (isDragging) {
+    isDragging = false;
+
+    captureImage(startX, startY, e.offsetX - startX, e.offsetY - startY);
+    canvas.style.display = 'none';
+
+    video.play();
+  }
+});
+function drawRect(x, y, w, h) {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(video, 0, 0, video.clientWidth,  video.clientHeight);
+  context.strokeStyle = '#FF0000';
+  context.strokeRect(x, y, w, h);
+}
+let cropCanvas
+function captureImage(x, y, w, h) {
+  // 更改为直接生成JPEG格式的图片
+  const imageDataUrl = canvas.toDataURL('image/jpeg', 1.0);  // 直接使用JPEG格式并设置最高质量
+  const img = new Image();
+  img.src = imageDataUrl;
+  img.onload = () => {
+      cropCanvas = document.createElement('canvas');
+    cropCanvas.width = Math.abs(w);
+    cropCanvas.height = Math.abs(h);
+    const ctx = cropCanvas.getContext('2d');
+    // 在裁剪画布上再次绘制时保持使用JPEG格式
+    ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+     showModal(cropCanvas.toDataURL('image/jpeg', 1.0));
+
+    //   cropCanvas.toBlob((blob) => {
+    //   const formData = new FormData();
+    //   formData.append('queryImg', blob, 'capture.jpg');  // 'image' 是后端期望的字段名
+    //
+    //   // 使用 fetch 发送数据到后端
+    //   fetch('/uploadQuery', {
+    //     method: 'POST',
+    //     body: formData
+    //   })
+    //   .then(response => response.json())
+    //   .then(data => {
+    //       alert(data.message)
+    //     console.log('Success:', data);  // 处理成功响应
+    //   })
+    //   .catch((error) => {
+    //     console.error('Error:', error);  // 处理错误
+    //   });
+    // }, 'image/jpeg', 1.0);  // 确保使用JPEG格式并设定最高质量
+  };
+
+
+  };
+
+</script>
+<script>
+    function showModal(imageSrc) {
+  const modal = document.getElementById('imageModal');
+  const modalImg = document.getElementById('modalImage');
+  const yesBtn = document.getElementById('yesBtn');
+  const noBtn = document.getElementById('noBtn');
+   const modalContent = document.getElementById('modal-content'); // 获取modal-co
+    const ratio = cropCanvas.width / cropCanvas.height;
+     if (ratio > 1) {  // 横向图片：宽度是长边
+        modalContent.style.width = '70vw';  // 宽度设置为视口宽度的80%
+        modalContent.style.height = `calc(70vw / ${ratio})`;  // 高度根据宽度和比例自动计算
+    } else {  // 纵向图片：高度是长边
+        modalContent.style.height = '70vh';  // 高度设置为视口高度的80%
+        modalContent.style.width = `calc(70vh * ${ratio})`;  // 宽度根据高度和比例自动计算
+    }
+
+  modal.style.display = 'block';
+  modalContent.style.display = 'block';
+
+  modalImg.src = imageSrc;
+
+  // 处理否决按钮
+  noBtn.onclick = function() {
+    modal.style.display = 'none';
+   document.getElementById("queryLabel").value=""
+    video.play();
+  };
+
+
+  yesBtn.onclick = function() {
+    console.log('Upload logic goes here');
+     var queryLabel = document.getElementById("queryLabel").value
+     modal.style.display = 'none';
+
+    cropCanvas.toBlob((blob) => {
+      const formData = new FormData();
+      formData.append('queryImg', blob);  // 'image' 是后端期望的字段名
+         formData.append("queryLabel", queryLabel);
+
+      // 使用 fetch 发送数据到后端
+      fetch('/uploadQuery', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+          alert(data.message)
+        console.log('Success:', data);  // 处理成功响应
+      })
+      .catch((error) => {
+        console.error('Error:', error);  // 处理错误
+      });
+    }, 'image/jpeg', 1.0);  // 确保使用JPEG格式并设定最高质量
+    // 可以在这里调用上传函数
+  };
+   video.play();
+}
+</script>
+</body>
+</html>

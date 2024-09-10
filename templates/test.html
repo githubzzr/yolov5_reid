@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行人识别展示系统</title>
+    <!-- 引入Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<!--    <link rel="stylesheet" href="../static/back.css">-->
+
+<style>
+    #canvasElement {
+  position: absolute;
+  pointer-events: none;
+  display: none;
+}
+    .capcontainer {
+  position: relative;
+}
+            #videoPlayer {
+                 position: absolute;
+
+        }
+</style>
+
+</head>
+<body>
+
+
+ <input type="file" id="videoFile" accept="video/*">
+ <div class="capcontainer">
+   <video id="videoPlayer" controls width="250">
+        Your browser does not support the video tag.
+    </video>
+
+<canvas id="canvasElement"></canvas>
+     </div>
+<button id="uploadButton">上传截图</button>
+
+<div id="screenshotContainer"></div>
+ <script>
+     document.addEventListener('DOMContentLoaded', function() {
+  // 获取ID为'videoPlayer'的video元素
+  var video = document.getElementById('videoPlayer');
+
+  // 确保视频元数据已加载
+  video.addEventListener('loadedmetadata', function() {
+    // 计算宽高比
+    var aspectRatio = video.videoHeight / video.videoWidth;
+     console.log("Height" + video.videoHeight + "/" + video.videoWidth)
+
+    console.log("验证一下" + aspectRatio)
+
+    // 功能：根据窗口大小更新视频尺寸
+    function updateVideoSize() {
+      // 获取页面宽度的90%
+      var newWidth = window.innerWidth * 0.9;
+
+      // 根据宽高比计算新高度
+      var newHeight = newWidth * aspectRatio;
+
+      // 设置video元素的大小属性
+      video.width = newWidth;
+      video.height = newHeight;
+      console.log("video原本大小为:" +video.width +"/" +video.height)
+    }
+
+    // 初次调整尺寸
+    updateVideoSize();
+
+    // 监听窗口尺寸变化，以调整视频大小
+    window.addEventListener('resize', updateVideoSize);
+  });
+});
+
+
+        const fileInput = document.getElementById('videoFile');
+        const videoPlayer = document.getElementById('videoPlayer');
+
+        fileInput.addEventListener('change', function() {
+            const files = fileInput.files;
+            if (files.length === 0) {
+                return;
+            }
+            const file = files[0];
+            videoPlayer.src = URL.createObjectURL(file);
+            videoPlayer.load();
+            videoPlayer.play();
+        });
+    </script>
+<script>
+    let startX, startY, isDragging = false;
+
+const video = document.getElementById('videoPlayer');
+const canvas = document.getElementById('canvasElement');
+const context = canvas.getContext('2d');
+const screenshotContainer = document.getElementById('screenshotContainer');
+  canvas.width = video.clientWidth ;
+  canvas.height = video.clientHeight;
+video.addEventListener('mousedown', (e) => {
+  startX = e.offsetX;
+  startY = e.offsetY;
+  isDragging = true;
+  canvas.style.display = 'block';
+  canvas.width = video.clientWidth ;
+  canvas.height = video.clientHeight;
+  console.log("videoclient大小为:" +video.clientWidth +"/" +video.clientHeight)
+     console.log("videostyle大小为:" +video.style.width +"/" +video.style.height)
+      console.log("video大小为:" +video.videoWidth +"/" +video.height)
+        console.log("videooffset大小为:" +video.offsetWidth +"/" +video.offsetWidth)
+       console.log("canvas大小为:" +canvas.width +"/" +canvas.height)
+
+  canvas.style.left = video.offsetLeft + 'px';
+  canvas.style.top = video.offsetTop + 'px';
+
+   video.pause();
+});
+
+video.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    drawRect(startX, startY, e.offsetX - startX, e.offsetY - startY);
+  }
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (isDragging) {
+    isDragging = false;
+
+    captureImage(startX, startY, e.offsetX - startX, e.offsetY - startY);
+    canvas.style.display = 'none';
+
+    video.play();
+  }
+});
+function drawRect(x, y, w, h) {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(video, 0, 0, video.clientWidth,  video.clientHeight);
+  context.strokeStyle = '#FF0000';
+  context.strokeRect(x, y, w, h);
+}
+
+function captureImage(x, y, w, h) {
+  // 更改为直接生成JPEG格式的图片
+  const imageDataUrl = canvas.toDataURL('image/jpeg', 1.0);  // 直接使用JPEG格式并设置最高质量
+  const img = new Image();
+  img.src = imageDataUrl;
+  img.onload = () => {
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = Math.abs(w);
+    cropCanvas.height = Math.abs(h);
+    const ctx = cropCanvas.getContext('2d');
+    // 在裁剪画布上再次绘制时保持使用JPEG格式
+    ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+    const croppedImage = cropCanvas.toDataURL('image/jpeg', 1.0);  // 再次确认使用JPEG格式并设定最高质量
+
+    // 显示裁剪后的图片
+    const downloadLink = document.createElement('a');
+    downloadLink.href = croppedImage;
+    downloadLink.download = 'captured-image.jpg';  // 确保文件扩展名为.jpg
+    document.body.appendChild(downloadLink);
+    downloadLink.click();  // 触发下载
+    document.body.removeChild(downloadLink);  // 下载后移除元素
+  };
+}
+document.getElementById('uploadButton').addEventListener('click', function() {
+    // 这里可以添加上传逻辑，例如使用 fetch() 上传 croppedImage
+});
+</script>
+
+    <!-- 引入Bootstrap JS 和 Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

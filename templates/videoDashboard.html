@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+        <link rel="stylesheet" href="../static/bootstrap.min.css">
+</head>
+<body>
+<<div class="container mt-5">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="row">
+                    <h1 class="text-center">已上传视频</h1>
+                </div>
+                <div class="row">
+                    <ul class="list-group">
+                        {% for file in trainList %}
+                        <li class="list-group-item">
+                            {{ file }}
+                            <button class="btn btn-danger btn-sm float-end delete-btn" data-filename="{{ file }}" data-list-type="train">删除</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="row">
+                    <h1 class="text-center">已训练视频</h1>
+                </div>
+                <div class="row">
+                    <ul class="list-group">
+                        {% for file in playList %}
+                        <li class="list-group-item">
+                            {{ file }}
+                            <button class="btn btn-danger btn-sm float-end delete-btn" data-filename="{{ file }}" data-list-type="play">删除</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+<div class="col-5"></div>
+
+
+    <script>
+
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function() {
+
+                const filename = this.getAttribute('data-filename');
+                const listType = this.getAttribute('data-list-type');
+                    console.log(filename)
+                fetch('/delete-video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filename: filename, listType: listType })
+                })
+                .then(response => response.json())
+                .then(data => {
+
+                        window.location.reload();
+
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+    </script>
+</body>
+</html>

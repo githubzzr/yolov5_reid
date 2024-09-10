@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行人识别展示系统</title>
+    <!-- 引入Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/back.css">
+
+<style>
+    .navbar {
+        background-color: transparent !important; /* 设置背景透明 */
+        border: none; /* 移除边框 */
+        box-shadow: none; /* 移除阴影 */
+    }
+  .navbar-brand {
+        color: white !important; /* 设置文字颜色为白色 */
+        font-family: 'Arial', 'Helvetica', sans-serif; /* 设置字体 */
+        font-size: 36px; /* 设置字体大小 */
+        font-weight: bold; /* 设置字体加粗，更符合标题风格 */
+    }
+      .mb-4 {
+    display: flex; /* 使用Flexbox布局 */
+
+    flex-wrap: nowrap; /* 防止内容换行 */
+    width: 100%; /* 使div占据全宽 */
+    /*margin-bottom: 1.5rem; !* 继承自Bootstrap的margin-bottom，也可以调整 *!*/
+  }
+
+  .mb-4 > * {
+    margin-right: 10px; /* 在子元素之间添加一些间隔 */
+  }
+
+  .mb-4 > :last-child {
+    margin-right: 0; /* 取消最后一个子元素的右间隔 */
+  }
+
+  /* 特定修正，确保input[type="file"]的相关按钮与其他元素对齐 */
+  button[onclick*="click"] {
+    align-self: center; /* 垂直居中按钮，对齐至其他元素 */
+  }
+
+.modal {
+    display: none; /* 默认隐藏模态框 */
+    position: fixed; /* 固定定位 */
+    z-index: 1; /* 置于顶层 */
+    left: 0;
+    top: 0;
+    width: 100%; /* 全宽 */
+    height: 100%; /* 全高 */
+    overflow: auto; /* 启用滚动条 */
+    background-color: rgb(0,0,0); /* 背景颜色 */
+    background-color: rgba(0,0,0,0.4); /* 背景颜色，半透明 */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 5% 从顶部和自动水平边距 */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* 宽度为80% */
+    height: 80%; /* 高度为80% */
+}
+
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+</style>
+<style>
+  /* 样式用于禁用状态的文件上传控件 */
+  input[type="file"]:disabled ,input[type="number"]:disabled,input[type="text"]:disabled {
+    background-color: #ccc; /* 设置背景色为灰色 */
+    cursor: not-allowed; /* 更改鼠标指针为不允许的符号 */
+  }
+    /* 设置复选框旁边的文字颜色为白色 */
+  label {
+    color: white;
+    display: inline-block; /* 确保标签和复选框在同一行 */
+  }
+  input[type="text"], input[type="file"] {
+    height: 38px;  // 通常Bootstrap的默认高度，你可以调整这个值来实验不同的高度
+    padding: 6px 12px;  // 标准的Bootstrap内边距，可调整以减少高度
+}
+</style>
+
+</head>
+<body>
+    <!-- 固定在顶部的导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+    <div class="container">
+        <div class="row w-100">
+            <div class="col d-flex justify-content-center">
+                <span class="navbar-brand mb-0 h1"> &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp行人识别检索系统</span>
+            </div>
+        </div>
+    </div>
+</nav>
+    <div id="box">
+        <div class="layer"></div>
+  <div class="layer"></div>
+  <div class="layer"></div>
+  <div class="layer"></div>
+  <div class="layer"></div>
+
+    <div class="container mt-5 pt-5">
+        <!-- 使用Bootstrap网格系统进行布局 -->
+<!--        <div class="row justify-content-start mt-5">-->
+<!--            <div class="col-12 col-md-6 text-center">-->
+                <div class="row justify-content-start mt-5">
+                <div class="mb-4">
+                        <div class="col-2">
+                    <button id="startCamera" class="btn btn-primary" onclick="hideVideo()">开始摄像头识别</button>
+                             </div>
+                             <div class="col-2">
+                    <button id="stopCamera" class="btn btn-secondary">关闭摄像头识别</button>
+                            </div>
+                    <input type="file" id="imgFile" name="imgFile" accept="image/*" onchange="uploadImg()" style="display: none;">
+
+                     <div class="col-2">
+                    <button class="btn btn-primary"  onclick="document.getElementById('imgFile').click();hideVideo()"> 预测图片</button>
+                         </div>
+
+                </div>
+              </div>
+              <div class="row justify-content-start mt-3">
+
+                      <div class="mb-4" >
+                               <div class="col-2">
+                            <input type="file" id="videoFile" name="videoFile" accept="video/*"  onchange="uploadVideo()" style="display: none;">
+                           <button id="startVideo" class="btn btn-primary" onclick=" document.getElementById('videoFile').click()">上传视频 </button>
+                                       </div>
+                     <div class="col-2">
+
+                          <button id="previewVideo" class="btn btn-primary" >预览视频 </button>
+                                                  </div>
+                     <div class="col-2">
+                           <select style="display: inline" id="uploadVideoList"></select>
+                            </div>
+                           <div class="col-2">
+                                 <button id="captureQuery" class="btn btn-primary" >截取Query </button>
+
+<!-- 模态框 -->
+<div id="capModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <iframe id="capIframe" src="" style="width: 100%; height: 100%;"></iframe>
+    </div>
+</div>
+                                  </div>
+
+
+                      </div>
+                     </div>
+                <div class="row justify-content-start mt-3">
+
+                      <div class="mb-4" >
+                             <div class="col-2">
+                                   <label>
+                  <input type="checkbox" id="enableUpload" onchange="toggleUpload()" checked>
+                           启用Query</label>
+                                   </div>
+                             <div class="col-2">
+                           <button id="manageQuery" class="btn btn-primary" >Query管理 </button>
+                                   </div>
+
+
+
+     <div class="col-2">
+                    <input type="file" id="queryImg" name="fileUpload" accept="image/*">
+          </div>
+         <div class="col-2">
+                            <input type="text" id="queryLabel" placeholder="query标签"  disabled>
+              </div>
+                            </div>
+                     </div>
+              <div class="row justify-content-start mt-3">
+                <div class="mb-4" >
+                   <!-- 触发文件选择的按钮 -->
+
+
+
+
+
+<!--                                  <p style="display: inline; margin-right: 10px;">选择一个视频：</p>-->
+                                 <select style="display: inline" id="trainVideoList"></select>
+                                 <button class="btn btn-secondary" onclick="submitVideo()">训练视频</button>
+                           <input type="number" id="frameRateInput" placeholder="帧率" style="margin-left: 10px;" min="1"  disabled>
+
+
+
+                </div>
+                     </div>
+               <div class="row justify-content-start mt-3">
+                <div class="mb-4" >
+                                <select id="playVideoList"  ></select>
+                                   <button class="btn btn-primary"  onclick="playSelectedVideo();hideImg()" > 播放视频</button>
+                                   <button onclick="hideVideo()">隐藏视频</button>
+                </div>
+                     </div>
+
+                <!-- 图像将在这里显示 -->
+                               <video id="videoPlayer" width="640" height="480"  type="video/mp4" style="display: none;" controls  >
+                             Your browser does not support the video tag.
+                              </video>
+                <img id="videoFrame" src="" alt="视频流" class="img-fluid mt-3"  style="display: none;" >
+                <!--监听这个变动时关掉视频显示-->
+            </div>
+<!--        </div>-->
+<!--    </div>-->
+    </div>
+
+
+<script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+<script>
+    const videoFrame = document.getElementById('videoFrame');
+    // 建立到服务器的WebSocket连接
+    const socket = io();
+
+    // 处理来自服务器的帧数据
+    socket.on('frame', function(data) {
+        videoFrame.src = 'data:image/jpeg;base64,' + data.data;
+        videoFrame.style.display = 'block'; // 确保视频框是可见的
+    });
+
+    document.getElementById('startCamera').addEventListener('click', function() {
+        console.log('start')
+        // 向服务器发送消息以开始视频流
+        socket.emit('startCamera');
+    });
+
+    document.getElementById('stopCamera').addEventListener('click', function() {
+               console.log('end')
+               socket.emit('stopCamera');
+
+         videoFrame.src = ""
+        // 向服务器发送消息以停止视频流
+
+        videoFrame.style.display = 'none'; // 隐藏视频框
+    });
+function toggleUpload() {
+    var checkBox = document.getElementById("enableUpload");
+    var fileUpload = document.getElementById("queryImg");
+    var queryInput = document.getElementById("queryLabel"); // 获取新的文本输入框元素
+    var  frameRateInput = document.getElementById("frameRateInput");
+    // 根据复选框的选中状态启用或禁用文件上传和文本输入
+    fileUpload.disabled = !checkBox.checked;
+    queryInput.disabled = !checkBox.checked; // 与文件上传控件同步
+   frameRateInput.disabled = checkBox.checked;
+}
+// 页面加载时立即调用一次以设置初始状态
+toggleUpload();
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    var input = document.getElementById('queryLabel');
+
+    // 激活输入框，如果需要的话可以去掉这一行
+
+ input.addEventListener('input', function() {
+        // 使用正则表达式替换掉非英文字母
+        this.value = this.value.replace(/[^a-zA-Z ]/g, '');
+    });
+});
+</script>
+
+<script>
+
+
+
+    function uploadVideo() {
+        var formData = new FormData();
+        var videoFile = document.getElementById('videoFile').files[0];
+        formData.append("videoFile", videoFile);
+
+        fetch('/uploadvideo', {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw response.json();  // 如果响应不是ok, 抛出错误
+                }
+                return response.json();  // 如果响应是ok, 返回json
+            })
+            .then(data => {
+                alert(data.message);  // 成功上传, 显示成功信息
+            })
+            .catch(errorPromise => {
+                // errorPromise.then(errorData => {
+                //     alert(errorData.error);  // 显示错误信息
+                // });
+            })
+    }
+</script>
+<script>
+    //自动加载视频列表
+window.onload = function() {
+    fetch('/list-videos')
+    .then(response => response.json())
+    .then(data => {
+        const trainSelect = document.getElementById('trainVideoList');
+        trainSelect.innerHTML = ''; // 清空现有的选项
+        const playSelect = document.getElementById('playVideoList');
+        playSelect.innerHTML = ''; // 清空现有的选项
+         const uploadSelect = document.getElementById('uploadVideoList');
+       uploadSelect.innerHTML = ''; // 清空现有的选项
+
+
+        data.trainList.forEach(video => {
+            const option = document.createElement('option');
+            option.value = video;
+            option.textContent = video;
+            trainSelect.appendChild(option);
+            uploadSelect.appendChild(option);
+        });
+        data.playList.forEach(video => {
+            const option = document.createElement('option');
+            option.value = video;
+            option.textContent = video;
+            playSelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function submitVideo() {
+    const selectedVideo = document.getElementById('trainVideoList').value;
+    const frameRate = document.getElementById('frameRateInput').value;
+
+    var checkBox = document.getElementById("enableUpload");
+     var formData = new FormData();
+
+    if(checkBox.checked){
+         alert("开始使用query训练视频")
+        console.log("train with query")
+        var queryImg = document.getElementById("queryImg").files[0];
+       var queryLabel = document.getElementById("queryLabel").value; // 获取新的文本输入框元素
+         formData.append("VideoName", selectedVideo);
+    // formData.append("frameRate", frameRate);
+    formData.append("queryImg", queryImg);
+    formData.append("queryLabel", queryLabel);
+        fetch('/trainVideoWithQuery', {
+        method: 'POST',
+       body: formData,
+    })
+    .then(response =>  {if (response.ok) {
+              alert("训练成功");
+
+    }}).catch(error => {
+        console.error('Error:', error);
+        alert('训练失败')
+    });
+
+
+
+    }else{
+        alert("开始训练视频")
+          console.log("train with query")
+
+    fetch('/trainVideo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+       body: JSON.stringify({ VideoName: selectedVideo, frameRate: frameRate }),
+    })
+    .then(response =>  {if (response.ok) {
+              alert("训练成功");
+
+    }}).catch(error => {
+        console.error('Error:', error);
+        alert('训练失败')
+    });
+
+    }
+
+
+
+}
+
+function playSelectedVideo() {
+
+
+    const videoName = document.getElementById('playVideoList').value;
+    const videoPlayer = document.getElementById('videoPlayer');
+    videoPlayer.style.display = 'block'; // 显示视频
+
+    console.log('Video can play through, play started.');
+
+
+    fetch(`/get-video?videoName=${encodeURIComponent(videoName)}`, {
+        mode: 'cors'  // 确保请求支持跨域
+    })
+        .then(response => {
+            if (!response.ok) {  // 检查响应状态
+                return response.text() // 尝试获取响应正文作为文本
+                    .then(text => {
+                        console.log('Network response was not ok. Details: ' + text);
+                        throw new Error('Network response was not ok. Details: ' + text); // 使用响应正文作为错误详情
+
+                    });
+            }
+            return response.blob();  // 如果响应状态正常，处理blob数据
+        })
+        .then(blob => {
+            var videoURL = URL.createObjectURL(blob);
+            console.log('videourl:' + videoURL);
+
+            videoPlayer.src = videoURL;
+            console.log('Video loaded and play started.');  // 打印日志
+            videoPlayer.play();
+
+
+            videoPlayer.onended = function () {
+                videoPlayer.style.display = 'none';
+            };
+        }).catch(error => {
+
+        console.error('Error:', error);
+        alert('Failed to fetch video: ' + error.message); // 弹出错误提示，包括从 catch 语句获得的错误信息
+    });
+    }
+
+    function hideVideo() {
+        const videoPlayer = document.getElementById('videoPlayer');
+        videoPlayer.style.display = 'none'; // 隐藏视频
+    }
+
+    function hideImg() {
+        const VideoFrame = document.getElementById("videoFrame")
+        VideoFrame.style.display = 'none';
+
+    }
+
+    function uploadImg() {
+        var formData = new FormData();
+        var imgFile = document.getElementById('imgFile').files[0];
+        formData.append("imgFile", imgFile);
+
+        fetch('/trainImg', {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => response.blob())
+            .then(blob => {
+                var imageUrl = URL.createObjectURL(blob);
+                var displayImage = document.getElementById('videoFrame');
+                displayImage.src = imageUrl;
+                displayImage.style.display = 'block';
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+// 模态框管理
+document.getElementById('captureQuery').onclick = function() {
+    var modal = document.getElementById('capModal');
+    var iframe = document.getElementById('capIframe');
+    var selectVideo = document.getElementById('uploadVideoList').value;  // 获取选择框的值
+    modal.style.display = "block";
+    iframe.src = "./capModalPage.html?selectVideo="+ encodeURIComponent(selectVideo); // 将选择框的值作为查询参数添加到URL中
+
+}
+
+// 获取关闭按钮元素
+var close = document.getElementsByClassName("close")[0];
+
+// 当用户点击 (x) 按钮，关闭模态框
+close.onclick = function() {
+    var modal = document.getElementById('capModal');
+    modal.style.display = "none";
+}
+
+// 点击模态框外部时也关闭模态框
+window.onclick = function(event) {
+    var modal = document.getElementById('capModal');
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+
+</script>
+
+
+    <!-- 引入Bootstrap JS 和 Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
